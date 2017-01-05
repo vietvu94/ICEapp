@@ -33,28 +33,34 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        // Start modify
-        // Array of strings...
+        dbHandler = new MyDBHandler(this, null, null, 1);
 
-        ArrayList<Contact> dummyContacts = new ArrayList<>();
-        dummyContacts.add(new Contact("Maria", "+35846578999"));
-        dummyContacts.add(new Contact("Pekka", "+35846194299"));
-        dummyContacts.add(new Contact("Anna", "+35154678999"));
-        dummyContacts.add(new Contact("Tom", "+35842348999"));
+        // Check if firstrun application
+        // Create sqlite file if first run
+        checkFirstRun(dbHandler);
 
+        // Get contact from sqlite file
+        ArrayList<Contact> dummyContacts = dbHandler.getContact();
+
+        // Customize list view
         Integer imageId = R.drawable.item_image;
         CustomList customAdapter = new CustomList(this, dummyContacts, imageId);
         ListView listView = (ListView) findViewById(R.id.contact_list);
         listView.setAdapter(customAdapter);
 
 
-        // Database sqlite
-        dbHandler = new MyDBHandler(this,null,null,1);
-        addContactToDB();
-
     }
 
-    public void addContactToDB(){
+    public void checkFirstRun(MyDBHandler dbHandler){
+        checkFirstRun = getSharedPreferences("com.vu.viet.iceapp", MODE_PRIVATE);
+        if (checkFirstRun.getBoolean("firstrun", true)) {
+            // Add contact to database
+            addContactToDB(dbHandler);
+            checkFirstRun.edit().putBoolean("firstrun", false).apply();
+        }
+    }
+
+    public void addContactToDB(MyDBHandler dbHandler) {
         dbHandler.addContact(new Contact("Maria", "+35846578999"));
         dbHandler.addContact(new Contact("Pekka", "+35846194299"));
     }

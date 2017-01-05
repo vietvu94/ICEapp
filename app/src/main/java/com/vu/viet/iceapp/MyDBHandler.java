@@ -2,8 +2,11 @@ package com.vu.viet.iceapp;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+
+import java.util.ArrayList;
 
 public class MyDBHandler extends SQLiteOpenHelper {
     private static final int DATABASE_VERSION = 1;
@@ -37,6 +40,27 @@ public class MyDBHandler extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
         db.insert(TABLE_CONTACT, null, values);
         db.close();
+    }
+
+    public ArrayList<Contact> getContact() {
+        ArrayList<Contact> contacts = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        String query = "SELECT * FROM " + TABLE_CONTACT + " WHERE 1";
+        Cursor cursor = db.rawQuery(query, null);
+        cursor.moveToFirst();
+
+        while (!cursor.isAfterLast()) {
+            if (cursor.getString(cursor.getColumnIndex(COLUMN_NAME)) != null) {
+                String contactName = cursor.getString(cursor.getColumnIndex(COLUMN_NAME));
+                String contactNumber = cursor.getString(cursor.getColumnIndex(COLUMN_PHONE));
+                contacts.add(new Contact(contactName,contactNumber));
+            }
+            cursor.moveToNext();
+        }
+        cursor.close();
+        db.close();
+        return contacts;
     }
 
 }

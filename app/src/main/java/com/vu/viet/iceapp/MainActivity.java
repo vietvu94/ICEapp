@@ -1,11 +1,15 @@
 package com.vu.viet.iceapp;
 
+import android.content.ContentResolver;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 
@@ -37,8 +41,10 @@ public class MainActivity extends AppCompatActivity {
 
         // Check if firstrun application
         // Create sqlite file if first run
-        checkFirstRun(dbHandler);
 
+        Log.v("vv_app_log", "starting add contact");
+        checkFirstRun(dbHandler);
+        Log.v("vv_app_log", "end add contact");
         // Get contact from sqlite file
         ArrayList<Contact> dummyContacts = dbHandler.getContact();
 
@@ -51,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void checkFirstRun(MyDBHandler dbHandler){
+    public void checkFirstRun(MyDBHandler dbHandler) {
         checkFirstRun = getSharedPreferences("com.vu.viet.iceapp", MODE_PRIVATE);
         if (checkFirstRun.getBoolean("firstrun", true)) {
             // Add contact to database
@@ -60,9 +66,50 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    // Add contact to database
     public void addContactToDB(MyDBHandler dbHandler) {
-        dbHandler.addContact(new Contact("Maria", "+35846578999"));
-        dbHandler.addContact(new Contact("Pekka", "+35846194299"));
+
+        ContentResolver cr = getContentResolver();
+        Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+
+        String contactName = null;
+        String contactNumber = null;
+        if (cursor != null) {
+            // Query for every contact
+            while (cursor.moveToNext()) {
+                String id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+
+                // Get contact name
+                contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                // Number of phone number that a contact has
+                int numberPhoneNumber = Integer.parseInt(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)));
+
+
+                if (numberPhoneNumber > 0) {
+                    // Query and loop for every phone number of the contact
+                    Cursor phoneCursor = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{id}, null);
+
+                    if (phoneCursor != null) {
+
+                        //get the first number
+                        phoneCursor.moveToFirst();
+                        contactNumber = phoneCursor.getString(phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                        phoneCursor.close();
+                    } else {
+                        contactNumber = "000";
+                    }
+
+                }
+
+                // Add to database
+                dbHandler.addContact(new Contact(contactName, contactNumber));
+            }
+
+            cursor.close();
+        } else {
+            Log.v("vv_app_log", "No contact in phone");
+        }
     }
 
 //

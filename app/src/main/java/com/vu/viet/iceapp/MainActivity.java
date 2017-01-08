@@ -1,17 +1,24 @@
 package com.vu.viet.iceapp;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -19,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
     SharedPreferences checkFirstRun = null;
     MyDBHandler dbHandler;
+    final static int ICEAPP_PERMISSIONS_REQUEST_READ_CONTACTS = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,24 +45,54 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        dbHandler = new MyDBHandler(this, null, null, 1);
 
-        // Check if firstrun application
-        // Create sqlite file if first run
+        // Check permission and add if necessary
+        Log.v("vv_app_log", "checking permission ....");
+        addPermission(this);
 
-        Log.v("vv_app_log", "starting add contact");
-        checkFirstRun(dbHandler);
-        Log.v("vv_app_log", "end add contact");
-        // Get contact from sqlite file
-        ArrayList<Contact> dummyContacts = dbHandler.getContact();
+    }
 
-        // Customize list view
-        Integer imageId = R.drawable.item_image;
-        CustomList customAdapter = new CustomList(this, dummyContacts, imageId);
-        ListView listView = (ListView) findViewById(R.id.contact_list);
-        listView.setAdapter(customAdapter);
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case ICEAPP_PERMISSIONS_REQUEST_READ_CONTACTS: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(MainActivity.this, "Permission accepted to read your Contacts", Toast.LENGTH_SHORT).show();
+                    Log.v("vv_app_log", "Permission accepted ....");
 
 
+                    dbHandler = new MyDBHandler(this, null, null, 1);
+
+                    // Check if firstrun application
+                    // Create sqlite file if first run
+
+                    Log.v("vv_app_log", "starting add contact");
+                    checkFirstRun(dbHandler);
+
+                    Log.v("vv_app_log", "end add contact");
+
+
+
+
+                    // Get contact from sqlite file
+                    ArrayList<Contact> contactsList = dbHandler.getContact();
+                    for (Contact thisContact:contactsList) {
+                        Log.v("vv_app_log", thisContact.getName());
+                        Log.v("vv_app_log", thisContact.getPhone_number());
+                    }
+                    showListView(contactsList, this);
+
+                } else {
+                    Toast.makeText(MainActivity.this, "Permission denied to read your Contacts", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Please reset and accept the permission", Toast.LENGTH_SHORT).show();
+                    Log.v("vv_app_log", "Permission declined ....");
+                }
+            }
+
+        }
     }
 
     public void checkFirstRun(MyDBHandler dbHandler) {
@@ -110,6 +148,29 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Log.v("vv_app_log", "No contact in phone");
         }
+    }
+
+
+    public void addPermission(Activity thisActivity) {
+
+        if (ContextCompat.checkSelfPermission(thisActivity,
+                Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(thisActivity,
+                    new String[]{Manifest.permission.READ_CONTACTS},
+                    ICEAPP_PERMISSIONS_REQUEST_READ_CONTACTS);
+
+
+        }
+    }
+
+    public void showListView (ArrayList<Contact> contactsList, Activity activity){
+        // Customize list view
+        Integer imageId = R.drawable.item_image;
+        CustomList customAdapter = new CustomList(activity, contactsList, imageId);
+        ListView listView = (ListView) findViewById(R.id.contact_list);
+        listView.setAdapter(customAdapter);
     }
 
 //

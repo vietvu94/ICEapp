@@ -44,12 +44,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-
         // Check permission and add if necessary
         Log.v("vv_app_log", "checking permission ....");
         addPermission(this);
 
+        // Read from database after the first time
+        // Get contact from sqlite file
+        dbHandler = new MyDBHandler(this, null, null, 1);
+        ArrayList<Contact> contactsList = dbHandler.getContact();
+        for (Contact thisContact:contactsList) {
+            Log.v("vv_app_log", thisContact.getName());
+            Log.v("vv_app_log", thisContact.getPhone_number());
+        }
+        showListView(contactsList, this);
     }
 
     @Override
@@ -63,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "Permission accepted to read your Contacts", Toast.LENGTH_SHORT).show();
                     Log.v("vv_app_log", "Permission accepted ....");
 
-
                     dbHandler = new MyDBHandler(this, null, null, 1);
 
                     // Check if firstrun application
@@ -73,8 +79,6 @@ public class MainActivity extends AppCompatActivity {
                     checkFirstRun(dbHandler);
 
                     Log.v("vv_app_log", "end add contact");
-
-
 
 
                     // Get contact from sqlite file

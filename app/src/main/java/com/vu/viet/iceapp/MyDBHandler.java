@@ -42,6 +42,12 @@ public class MyDBHandler extends SQLiteOpenHelper {
         db.close();
     }
 
+    public void clearContact(){
+        String query = "DELETE FROM " + TABLE_CONTACT;
+        SQLiteDatabase db = getWritableDatabase();
+        db.execSQL(query);
+    }
+
     public ArrayList<Contact> getContact() {
         ArrayList<Contact> contacts = new ArrayList<>();
 

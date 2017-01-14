@@ -16,6 +16,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -47,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         // Check permission and add if necessary
         Log.v("vv_app_log", "checking permission ....");
         addPermission(this);
-
+        Log.v("vv_app_log", "end check permission!");
         // Read from database after the first time
         // Get contact from sqlite file
         dbHandler = new MyDBHandler(this, null, null, 1);
@@ -57,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
             Log.v("vv_app_log", thisContact.getPhone_number());
         }
         showListView(contactsList, this);
+        Log.v("vv_app_log", "Read from database success.");
     }
 
     @Override
@@ -177,28 +180,51 @@ public class MainActivity extends AppCompatActivity {
         listView.setAdapter(customAdapter);
     }
 
-//
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.menu_main, menu);
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                // User chose the "Settings" item, show the app settings UI...
+                return true;
+
+            case R.id.action_import:
+                // User chose the "Import" action
+                dbHandler = new MyDBHandler(this, null, null, 1);
+                // Add contact to database
+                Log.v("vv_app_log", "Start adding contact");
+                removeContactFromDB(dbHandler);
+                addContactToDB(dbHandler);
+                // Get contact from sqlite file
+                ArrayList<Contact> contactsList = dbHandler.getContact();
+                for (Contact thisContact:contactsList) {
+                    Log.v("vv_app_log", thisContact.getName());
+                    Log.v("vv_app_log", thisContact.getPhone_number());
+                }
+                showListView(contactsList, this);
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
+    }
+
+    public void removeContactFromDB(MyDBHandler dbHandler){
+        dbHandler.clearContact();
+    }
 
 
 }

@@ -3,9 +3,11 @@ package com.vu.viet.iceapp;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
@@ -29,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     SharedPreferences checkFirstRun = null;
     MyDBHandler dbHandler;
     final static int ICEAPP_PERMISSIONS_REQUEST_READ_CONTACTS = 0;
+    final static int ICEAPP_PERMISSIONS_REQUEST_CALL_PHONE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +51,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Check permission and add if necessary
         Log.v("vv_app_log", "checking permission ....");
-        addPermission(this);
+        addContactPermission(this);
+        addCallPermission(this);
         Log.v("vv_app_log", "end check permission!");
         // Read from database after the first time
         // Get contact from sqlite file
@@ -98,7 +102,22 @@ public class MainActivity extends AppCompatActivity {
                     Log.v("vv_app_log", "Permission declined ....");
                 }
             }
+            case ICEAPP_PERMISSIONS_REQUEST_CALL_PHONE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
+                    Log.v("vv_app_log", "Permission to call accepted ....");
+
+
+
+
+                } else {
+                    Toast.makeText(MainActivity.this, "Permission denied to call phone number", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Please reset and accept the permission", Toast.LENGTH_SHORT).show();
+                    Log.v("vv_app_log", "Permission to call declined ....");
+                }
+            }
         }
     }
 
@@ -158,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void addPermission(Activity thisActivity) {
+    public void addContactPermission(Activity thisActivity) {
 
         if (ContextCompat.checkSelfPermission(thisActivity,
                 Manifest.permission.READ_CONTACTS)
@@ -167,6 +186,20 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(thisActivity,
                     new String[]{Manifest.permission.READ_CONTACTS},
                     ICEAPP_PERMISSIONS_REQUEST_READ_CONTACTS);
+
+
+        }
+    }
+
+    public void addCallPermission(Activity thisActivity) {
+
+        if (ContextCompat.checkSelfPermission(thisActivity,
+                Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(thisActivity,
+                    new String[]{Manifest.permission.CALL_PHONE},
+                    ICEAPP_PERMISSIONS_REQUEST_CALL_PHONE);
 
 
         }
@@ -188,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    @SuppressWarnings({"MissingPermission"})
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -213,6 +247,11 @@ public class MainActivity extends AppCompatActivity {
                 }
                 showListView(contactsList, this);
                 return true;
+            case R.id.action_call:
+                // User chose the Call option
+                Intent callIntent = new Intent(Intent.ACTION_CALL);
+                callIntent.setData(Uri.parse("tel:5556"));
+                startActivity(callIntent);
 
             default:
                 // If we got here, the user's action was not recognized.

@@ -3,10 +3,13 @@ package com.vu.viet.iceapp;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
@@ -17,6 +20,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,6 +38,14 @@ public class MainActivity extends AppCompatActivity {
     final static int ICEAPP_PERMISSIONS_REQUEST_READ_CONTACTS = 0;
     final static int ICEAPP_PERMISSIONS_REQUEST_CALL_PHONE = 1;
 
+
+
+    // The following are used for the shake detection
+    private SensorManager mSensorManager;
+    private Sensor mAccelerometer;
+    private ShakeEventListener mShakeDetector;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,10 +57,17 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, "Any problem please contact my email: kamilight94@gmail.com", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });
+
+        // add PhoneStateListener
+        PhoneCallListener phoneListener = new PhoneCallListener();
+        TelephonyManager telephonyManager = (TelephonyManager) this
+                .getSystemService(Context.TELEPHONY_SERVICE);
+        telephonyManager.listen(phoneListener, PhoneStateListener.LISTEN_CALL_STATE);
+
 
         // Check permission and add if necessary
         Log.v("vv_app_log", "checking permission ....");
@@ -64,6 +84,43 @@ public class MainActivity extends AppCompatActivity {
         }
         showListView(contactsList, this);
         Log.v("vv_app_log", "Read from database success.");
+
+
+        // ShakeDetector initialization
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mAccelerometer = mSensorManager
+                .getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mShakeDetector = new ShakeEventListener();
+        mShakeDetector.setOnShakeListener(new ShakeEventListener.OnShakeListener(){
+
+            @Override
+            public void onShake(int count) {
+				/*
+				 * The following method, "handleShakeEvent(count):" is a stub //
+				 * method you would use to setup whatever you want done once the
+				 * device has been shook.
+				 */
+                handleShakeEvent(count);
+            }});
+
+        // Start service
+        Intent intent = new Intent(this, ShakeService.class);
+        startService(intent);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Add the following line to register the Session Manager Listener onResume
+        mSensorManager.registerListener(mShakeDetector, mAccelerometer,	SensorManager.SENSOR_DELAY_UI);
+
+    }
+
+    @Override
+    public void onPause() {
+        // Add the following line to unregister the Sensor Manager onPause
+        mSensorManager.unregisterListener(mShakeDetector);
+        super.onPause();
     }
 
     @Override
@@ -221,7 +278,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    @SuppressWarnings({"MissingPermission"})
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -242,16 +298,16 @@ public class MainActivity extends AppCompatActivity {
                 // Get contact from sqlite file
                 ArrayList<Contact> contactsList = dbHandler.getContact();
                 for (Contact thisContact:contactsList) {
-                    Log.v("vv_app_log", thisContact.getName());
-                    Log.v("vv_app_log", thisContact.getPhone_number());
+                    //Log.v("vv_app_log", thisContact.getName());
+                    //Log.v("vv_app_log", thisContact.getPhone_number());
                 }
                 showListView(contactsList, this);
                 return true;
             case R.id.action_call:
-                // User chose the Call option
-                Intent callIntent = new Intent(Intent.ACTION_CALL);
-                callIntent.setData(Uri.parse("tel:5556"));
-                startActivity(callIntent);
+                addCallPermission(this);
+                dbHandler = new MyDBHandler(this, null, null, 1);
+                callContacts(dbHandler);
+
 
             default:
                 // If we got here, the user's action was not recognized.
@@ -264,6 +320,36 @@ public class MainActivity extends AppCompatActivity {
     public void removeContactFromDB(MyDBHandler dbHandler){
         dbHandler.clearContact();
     }
+
+
+    @SuppressWarnings({"MissingPermission"})
+    // User chose the Call option
+    public void callContacts (MyDBHandler dbHandler){
+        ArrayList<Contact> contactsList = dbHandler.getContact();
+//        for (int i=0;i<=contactsList.size()-1;i++) {
+            Intent callIntent = new Intent( Intent.ACTION_CALL);
+            String phone = "tel:" + contactsList.get(0).getPhone_number();
+            callIntent.setData(Uri.parse(phone));
+            startActivity(callIntent);
+            Log.v("vv_app_log", "Calling" + phone);
+
+
+
+//        }
+
+    }
+
+
+    public void handleShakeEvent(int count){
+        if (count == 1){
+            //Toast.makeText(MainActivity.this, "Shaking received", Toast.LENGTH_LONG).show();
+            Log.v("vv_app_log", "Shaking received. Calling now...");
+            dbHandler = new MyDBHandler(this, null, null, 1);
+            callContacts(dbHandler);
+        }
+
+    }
+
 
 
 }

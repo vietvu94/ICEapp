@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     SharedPreferences checkFirstRun = null;
     MyDBHandler dbHandler;
+    final static String nameAppIdentifier = "ICE";
     final static int ICEAPP_PERMISSIONS_REQUEST_READ_CONTACTS = 0;
     final static int ICEAPP_PERMISSIONS_REQUEST_CALL_PHONE = 1;
 
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Any problem please contact my email: kamilight94@gmail.com", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, "Any bug please contact Viet Vu <> kamilight94@gmail.com ", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });
@@ -203,6 +204,11 @@ public class MainActivity extends AppCompatActivity {
 
                 // Get contact name
                 contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+
+                // Add contact which has ICE string
+                if (!contactName.contains(nameAppIdentifier))
+                    continue;
+
                 // Number of phone number that a contact has
                 int numberPhoneNumber = Integer.parseInt(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)));
 
